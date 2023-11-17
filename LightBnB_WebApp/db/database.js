@@ -18,15 +18,6 @@ const users = require("./json/users.json");
  * @return {Promise<{}>} A promise to the user.
  */
 const getUserWithEmail = function (email) {
-  // let resolvedUser = null;
-  // for (const userId in users) {
-  //   const user = users[userId];
-  //   if (user && user.email.toLowerCase() === email.toLowerCase()) {
-  //     resolvedUser = user;
-  //   }
-  // }
-  // return Promise.resolve(resolvedUser);
-
   const queryString = `
   SELECT * FROM users
   WHERE email = $1`
@@ -73,11 +64,6 @@ const getUserWithId = function (id) {
  * @return {Promise<{}>} A promise to the user.
  */
 const addUser = function (user) {
-  // const userId = Object.keys(users).length + 1;
-  // user.id = userId;
-  // users[userId] = user;
-  // return Promise.resolve(user);
-
   const queryString = `
   INSERT INTO users (name, email, password)
   VALUES ($1, $2, $3)
@@ -90,7 +76,6 @@ const addUser = function (user) {
   return pool
     .query(queryString, [name, email, password])
     .then((result) => {
-      // console.log(result.rows[0])
       return result.rows[0]
     })
     .catch((err) => {
@@ -107,7 +92,26 @@ const addUser = function (user) {
  * @return {Promise<[{}]>} A promise to the reservations.
  */
 const getAllReservations = function (guest_id, limit = 10) {
-  return getAllProperties(null, 2);
+  // return getAllProperties(null, 2);
+
+  const queryString = `SELECT properties.*, reservations.*, avg(property_reviews.rating) as average_rating
+  FROM properties
+  JOIN reservations ON reservations.property_id = properties.id
+  JOIN property_reviews ON properties.id = property_reviews.property_id
+  WHERE reservations.guest_id = $1
+  GROUP BY properties.id, reservations.id
+  ORDER BY reservations.start_date
+  LIMIT $2`;
+
+  return pool
+  .query(queryString, [guest_id, limit])
+  .then((result) => {
+    // console.log(result.rows);
+    return result.rows;
+  })
+  .catch((err) => {
+    console.log('error:', err.message);
+  });
 };
 
 /// Properties
@@ -119,12 +123,6 @@ const getAllReservations = function (guest_id, limit = 10) {
  * @return {Promise<[{}]>}  A promise to the properties.
  */
 const getAllProperties = function (options, limit = 10) {
-  // const limitedProperties = {};
-  // for (let i = 1; i <= limit; i++) {
-  //   limitedProperties[i] = properties[i];
-  // }
-  // return Promise.resolve(limitedProperties);
-
   const queryString = `
   SELECT * FROM properties
   LIMIT $1;`
